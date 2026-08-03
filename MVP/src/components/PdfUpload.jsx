@@ -70,8 +70,8 @@ function PdfUpload({ onDataExtracted }) {
       );
 
       const response =
-        await fetch(
-          "http://localhost:5000/api/upload-pdf",
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/upload-pdf`,
           {
             method: "POST",
             body: formData,
