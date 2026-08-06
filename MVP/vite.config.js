@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   preview: {
     host: '0.0.0.0',
-    allowedHosts: ['mvp-production-3211.up.railway.app'],
+    allowedHosts: ['mvp-production-3211.up.railway.app', 'mvp-production-fc49.up.railway.app'],
   },
 })
