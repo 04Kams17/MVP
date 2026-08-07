@@ -3,7 +3,7 @@ import {
 } from "../utils/generateScopeReport";
 
 function ResultsCard({ result }) {
-  // What appears before the user calculates
+  
   if (!result) {
     return (
       <div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-emerald-500/10 to-slate-900 p-6 shadow-2xl sm:p-8">
