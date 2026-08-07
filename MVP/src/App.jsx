@@ -63,11 +63,12 @@ function App() {
   
   return (
     <Dashboard
-      result={result}
-      extractedData={extractedData}
-      handleCalculate={handleCalculate}
-      handleDataExtracted={handleDataExtracted}
-    />
+  result={result}
+  extractedData={extractedData}
+  handleCalculate={handleCalculate}
+  handleDataExtracted={handleDataExtracted}
+  onLogout={() => setLoggedIn(false)}
+/>
   );
 }
 

@@ -26,11 +26,7 @@ export function generateScopeReport(result) {
   const pageHeight =
     doc.internal.pageSize.getHeight();
 
-  /*
-    --------------------------------
-    REPORT TITLE
-    --------------------------------
-  */
+
 
   doc.setFont(
     "helvetica",
@@ -73,11 +69,6 @@ export function generateScopeReport(result) {
     }
   );
 
-  /*
-    --------------------------------
-    INVENTORY INFORMATION
-    --------------------------------
-  */
 
   doc.setFont(
     "helvetica",
@@ -158,11 +149,7 @@ export function generateScopeReport(result) {
     },
   });
 
-  /*
-    --------------------------------
-    COMBINED SUMMARY
-    --------------------------------
-  */
+  
 
   const summaryY =
     doc.lastAutoTable.finalY + 12;
@@ -229,9 +216,7 @@ export function generateScopeReport(result) {
     },
 
     didParseCell(data) {
-      /*
-        Make the combined total bold.
-      */
+   
 
       if (
         data.section === "body" &&
@@ -243,11 +228,7 @@ export function generateScopeReport(result) {
     },
   });
 
-  /*
-    --------------------------------
-    SCOPE 1 BREAKDOWN
-    --------------------------------
-  */
+
 
   const scope1Y =
     doc.lastAutoTable.finalY + 12;
@@ -346,11 +327,7 @@ export function generateScopeReport(result) {
     },
   });
 
-  /*
-    --------------------------------
-    SCOPE 2 BREAKDOWN
-    --------------------------------
-  */
+  
 
   const scope2Y =
     doc.lastAutoTable.finalY + 12;
@@ -436,23 +413,10 @@ export function generateScopeReport(result) {
     },
   });
 
-  /*
-    --------------------------------
-    ADD A NEW PAGE
-    --------------------------------
-
-    This keeps the methodology and
-    disclaimer from being cut off
-    when the report becomes longer.
-  */
+ 
 
   doc.addPage();
 
-  /*
-    --------------------------------
-    CALCULATION DETAILS
-    --------------------------------
-  */
 
   doc.setFont(
     "helvetica",
@@ -531,11 +495,7 @@ export function generateScopeReport(result) {
     },
   });
 
-  /*
-    --------------------------------
-    REPORTING NOTICE
-    --------------------------------
-  */
+
 
   const noticeY =
     doc.lastAutoTable.finalY + 14;
@@ -579,11 +539,7 @@ export function generateScopeReport(result) {
     noticeY + 7
   );
 
-  /*
-    --------------------------------
-    FOOTERS
-    --------------------------------
-  */
+  
 
   const totalPages =
     doc.getNumberOfPages();
@@ -621,11 +577,6 @@ export function generateScopeReport(result) {
     );
   }
 
-  /*
-    --------------------------------
-    SAVE PDF
-    --------------------------------
-  */
 
   const companyFileName =
     cleanFileName(
