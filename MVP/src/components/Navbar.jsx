@@ -1,15 +1,19 @@
+import logo from "../assets/amberix-logo.png";
+
 function Navbar({ onNewReport, onLogout }) {
   return (
     <nav className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
 
-        {/* Logo / Brand */}
+      
 
         <div className="flex items-center gap-3">
 
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
-            🌱
-          </div>
+         <img
+  src={logo}
+  alt="Amberix"
+  className="h-10 w-10 object-contain"
+/>
 
           <div>
             <h1 className="font-bold text-slate-900">
@@ -23,7 +27,7 @@ function Navbar({ onNewReport, onLogout }) {
 
         </div>
 
-        {/* Right Side */}
+      
 
         <div className="flex items-center gap-3">
 

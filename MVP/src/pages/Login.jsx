@@ -1,4 +1,5 @@
 import { useState } from "react";
+import logo from "../assets/amberix-logo.png";
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -20,13 +21,19 @@ export default function Login({ onLogin }) {
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
 
         
-        <div className="border-b px-8 py-5">
-          <h1 className="text-4xl font-bold text-gray-900">
-            <span className="text-green-600">🌍</span> Amberix
-          </h1>
-        </div>
+       <div className="flex items-center justify-center gap-3">
+  <img
+    src={logo}
+    alt="Amberix"
+    className="h-12 w-12 object-contain"
+  />
 
-        {/* Form */}
+  <h1 className="text-2xl font-bold text-slate-900">
+    Amberix
+  </h1>
+</div>
+
+        
         <div className="p-10">
           <div className="bg-gray-50 rounded-lg p-8 shadow-sm">
 
