@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import DashboardCards from "../components/DashboardCards";
 import NewReportModal from "../components/NewReportModal";
 
+
 export default function Dashboard({
   result,
   extractedData,

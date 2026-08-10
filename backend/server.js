@@ -5,9 +5,19 @@ const path = require("path");
 const multer = require("multer");
 const pdf = require("pdf-parse");
 
+const { Pool } = require("pg");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+
 const app = express();
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
+
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 
 
@@ -15,8 +25,63 @@ app.use(cors());
 app.use(express.json());
 
 
-// Scope 1 factors:
-// kg CO2e per unit of fuel
+
+async function initializeDatabase() {
+  if (!process.env.DATABASE_URL) {
+    console.warn(
+      "DATABASE_URL is not set. Authentication routes will not work."
+    );
+
+    return;
+  }
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log("Users table ready.");
+  } catch (error) {
+    console.error(
+      "Database initialization error:",
+      error
+    );
+  }
+}
+
+
+
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase();
+}
+
+function createToken(user) {
+  if (!process.env.JWT_SECRET) {
+    throw new Error(
+      "JWT_SECRET is not configured."
+    );
+  }
+
+  return jwt.sign(
+    {
+      userId: user.id,
+      email: user.email,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+}
+
+
 
 const SCOPE_1_FACTORS = {
   naturalGas: 5.31,
@@ -24,11 +89,7 @@ const SCOPE_1_FACTORS = {
   diesel: 10.18,
 };
 
-// Scope 2 MVP factors:
-// kg CO2e per kWh
-//
-// These are simplified state-level
-// estimates for the MVP.
+
 
 const STATE_ELECTRICITY_FACTORS = {
   AL: 0.39,
@@ -61,28 +122,29 @@ const STATE_ELECTRICITY_FACTORS = {
   NV: 0.35,
   NH: 0.18,
   NJ: 0.23,
-  NM: 0.40,
-  NY: 0.20,
+  NM: 0.4,
+  NY: 0.2,
   NC: 0.36,
   ND: 0.58,
-  OH: 0.50,
+  OH: 0.5,
   OK: 0.45,
   OR: 0.18,
   PA: 0.39,
   RI: 0.25,
-  SC: 0.40,
+  SC: 0.4,
   SD: 0.46,
   TN: 0.39,
   TX: 0.42,
   UT: 0.48,
-  VT: 0.10,
+  VT: 0.1,
   VA: 0.34,
   WA: 0.11,
   WV: 0.68,
   WI: 0.45,
   WY: 0.62,
-  DC: 0.30,
+  DC: 0.3,
 };
+
 
 
 const uploadsFolder = path.join(
@@ -179,7 +241,8 @@ const upload = multer({
 
 
 function toNumber(value) {
-  const number = Number(value);
+  const number =
+    Number(value);
 
   if (
     Number.isNaN(number) ||
@@ -204,13 +267,18 @@ function findNumber(
     if (match) {
       const value =
         match[1]
-          .replace(/,/g, "");
+          .replace(
+            /,/g,
+            ""
+          );
 
       const number =
         Number(value);
 
       if (
-        !Number.isNaN(number)
+        !Number.isNaN(
+          number
+        )
       ) {
         return number;
       }
@@ -264,6 +332,304 @@ app.get(
 
 
 app.post(
+  "/api/signup",
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const email =
+        normalizeEmail(
+          req.body.email
+        );
+
+      const password =
+        String(
+          req.body.password || ""
+        );
+
+      if (
+        !email ||
+        !password
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Email and password are required.",
+          });
+      }
+
+      if (
+        !email.includes("@")
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Please enter a valid email address.",
+          });
+      }
+
+      if (
+        password.length < 8
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Password must be at least 8 characters long.",
+          });
+      }
+
+     
+
+      const existingUser =
+        await pool.query(
+          `
+            SELECT id
+            FROM users
+            WHERE email = $1
+          `,
+          [email]
+        );
+
+      if (
+        existingUser.rows.length >
+        0
+      ) {
+        return res
+          .status(409)
+          .json({
+            success: false,
+
+            message:
+              "An account with that email already exists.",
+          });
+      }
+
+      
+
+      const passwordHash =
+        await bcrypt.hash(
+          password,
+          12
+        );
+
+      // Create user
+
+      const insertedUser =
+        await pool.query(
+          `
+            INSERT INTO users (
+              email,
+              password_hash
+            )
+            VALUES ($1, $2)
+            RETURNING
+              id,
+              email,
+              created_at
+          `,
+          [
+            email,
+            passwordHash,
+          ]
+        );
+
+      const user =
+        insertedUser.rows[0];
+
+      
+
+      const token =
+        createToken(user);
+
+      return res
+        .status(201)
+        .json({
+          success: true,
+
+          message:
+            "Account created successfully.",
+
+          token,
+
+          user: {
+            id:
+              user.id,
+
+            email:
+              user.email,
+
+            createdAt:
+              user.created_at,
+          },
+        });
+    } catch (error) {
+      console.error(
+        "Signup error:",
+        error
+      );
+
+      
+
+      if (
+        error.code ===
+        "23505"
+      ) {
+        return res
+          .status(409)
+          .json({
+            success: false,
+
+            message:
+              "An account with that email already exists.",
+          });
+      }
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+
+          message:
+            "Account creation failed.",
+        });
+    }
+  }
+);
+
+
+app.post(
+  "/api/login",
+  async (
+    req,
+    res
+  ) => {
+    try {
+      const email =
+        normalizeEmail(
+          req.body.email
+        );
+
+      const password =
+        String(
+          req.body.password || ""
+        );
+
+      if (
+        !email ||
+        !password
+      ) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Email and password are required.",
+          });
+      }
+
+      const userResult =
+        await pool.query(
+          `
+            SELECT
+              id,
+              email,
+              password_hash,
+              created_at
+            FROM users
+            WHERE email = $1
+          `,
+          [email]
+        );
+
+      if (
+        userResult.rows.length ===
+        0
+      ) {
+        return res
+          .status(401)
+          .json({
+            success: false,
+
+            message:
+              "Invalid email or password.",
+          });
+      }
+
+      const user =
+        userResult.rows[0];
+
+      const passwordMatches =
+        await bcrypt.compare(
+          password,
+          user.password_hash
+        );
+
+      if (
+        !passwordMatches
+      ) {
+        return res
+          .status(401)
+          .json({
+            success: false,
+
+            message:
+              "Invalid email or password.",
+          });
+      }
+
+      const token =
+        createToken(user);
+
+      return res.json({
+        success: true,
+
+        message:
+          "Login successful.",
+
+        token,
+
+        user: {
+          id:
+            user.id,
+
+          email:
+            user.email,
+
+          createdAt:
+            user.created_at,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          success: false,
+
+          message:
+            "Login failed.",
+        });
+    }
+  }
+);
+
+
+app.post(
   "/api/calculate",
   (
     req,
@@ -286,7 +652,7 @@ app.post(
         state,
       } = req.body;
 
-     
+  
       const naturalGasAmount =
         toNumber(
           naturalGas
@@ -326,7 +692,6 @@ app.post(
         totalScope1Kg /
         1000;
 
-   
 
       const electricityAmount =
         toNumber(
@@ -354,7 +719,6 @@ app.post(
         totalScope2Kg /
         1000;
 
-     
 
       const combinedTotalKg =
         totalScope1Kg +
@@ -363,7 +727,7 @@ app.post(
       const combinedTotalTons =
         combinedTotalKg /
         1000;
-
+     
 
       return res.json({
         success: true,
@@ -461,6 +825,7 @@ app.post(
 );
 
 
+
 app.post(
   "/api/upload-pdf",
   upload.single("pdf"),
@@ -488,7 +853,7 @@ app.post(
           req.file.path
         );
 
-      
+     
 
       const pdfData =
         await pdf(
@@ -497,8 +862,6 @@ app.post(
 
       const extractedText =
         pdfData.text;
-
-      // Normalize whitespace
 
       const normalizedText =
         extractedText
@@ -572,7 +935,7 @@ app.post(
           ),
       };
 
-     
+   
 
       const textFileName =
         req.file.filename.replace(
@@ -592,6 +955,7 @@ app.post(
         "utf8"
       );
 
+    
 
       return res
         .status(200)
@@ -654,6 +1018,7 @@ app.post(
 );
 
 
+
 app.use(
   (
     error,
@@ -694,11 +1059,16 @@ app.use(
 );
 
 
+
+initializeDatabase();
+
+
+
 app.listen(
   PORT,
   () => {
     console.log(
-      `Backend running at http://localhost:${PORT}`
+      `Backend running on port ${PORT}`
     );
   }
 );

@@ -599,7 +599,7 @@ function EmissionsForm({
               </select>
             </div>
 
-            {/* Electricity */}
+         
 
             <div>
               <label
