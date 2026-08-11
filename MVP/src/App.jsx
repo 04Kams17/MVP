@@ -5,28 +5,46 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(() => {
+    return Boolean(
+      localStorage.getItem("amberix_token")
+    );
+  });
 
   const [showSignup, setShowSignup] =
     useState(false);
 
-  const [result, setResult] = useState(null);
+  const [result, setResult] =
+    useState(null);
 
   const [extractedData, setExtractedData] =
     useState(null);
 
   async function handleCalculate(formData) {
     try {
+      const token =
+        localStorage.getItem(
+          "amberix_token"
+        );
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/calculate`,
         {
           method: "POST",
 
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
+
+            ...(token && {
+              Authorization:
+                `Bearer ${token}`,
+            }),
           },
 
-          body: JSON.stringify(formData),
+          body: JSON.stringify(
+            formData
+          ),
         }
       );
 
@@ -67,10 +85,42 @@ function App() {
     );
   }
 
+  function handleLoginSuccess(user) {
+    console.log(
+      "Logged in:",
+      user
+    );
 
+    setShowSignup(false);
+    setLoggedIn(true);
+  }
+
+  function handleSignupSuccess(user) {
+    console.log(
+      "Account created:",
+      user
+    );
+
+    setShowSignup(false);
+    setLoggedIn(true);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(
+      "amberix_token"
+    );
+
+    localStorage.removeItem(
+      "amberix_user"
+    );
+
+    setLoggedIn(false);
+    setShowSignup(false);
+    setResult(null);
+    setExtractedData(null);
+  }
 
   if (!loggedIn) {
-    // Create Account Page
     if (showSignup) {
       return (
         <Signup
@@ -80,15 +130,17 @@ function App() {
           onBack={() =>
             setShowSignup(false)
           }
+          onSignupSuccess={
+            handleSignupSuccess
+          }
         />
       );
     }
 
-    // Login Page
     return (
       <Login
-        onLogin={() =>
-          setLoggedIn(true)
+        onLogin={
+          handleLoginSuccess
         }
         onCreateAccount={() =>
           setShowSignup(true)
@@ -102,17 +154,18 @@ function App() {
   return (
     <Dashboard
       result={result}
-      extractedData={extractedData}
+      extractedData={
+        extractedData
+      }
       handleCalculate={
         handleCalculate
       }
       handleDataExtracted={
         handleDataExtracted
       }
-      onLogout={() => {
-        setLoggedIn(false);
-        setShowSignup(false);
-      }}
+      onLogout={
+        handleLogout
+      }
     />
   );
 }

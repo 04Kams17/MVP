@@ -3,7 +3,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
-const pdf = require("pdf-parse");
+const { PDFParse } = require("pdf-parse");
 
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
@@ -848,20 +848,23 @@ app.post(
       }
 
 
-      const pdfBuffer =
-        fs.readFileSync(
-          req.file.path
-        );
+     const pdfBuffer =
+  fs.readFileSync(
+    req.file.path
+  );
 
-     
+const parser =
+  new PDFParse({
+    data: pdfBuffer,
+  });
 
-      const pdfData =
-        await pdf(
-          pdfBuffer
-        );
+const pdfData =
+  await parser.getText();
 
-      const extractedText =
-        pdfData.text;
+const extractedText =
+  pdfData.text;
+
+await parser.destroy();
 
       const normalizedText =
         extractedText
